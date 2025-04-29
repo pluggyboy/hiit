@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export', // Enable static exports for deployment to Vercel
+  // Remove the 'output: export' for Vercel deployment
   images: {
-    unoptimized: true, // This is required for static exports with images
+    domains: ['localhost'], // Allow image optimization
   },
   eslint: {
     // Ignore ESLint errors during production build
