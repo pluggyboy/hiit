@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { recordWorkout } from '@/utils/streak';
-import { scheduleWorkoutReminder, areRemindersEnabled } from '@/utils/notifications';
+import { recordWorkoutCompletion, areRemindersEnabled } from '@/utils/notifications';
 import StreakDisplay from './StreakDisplay';
 import SettingsModal from './SettingsModal';
 
@@ -134,10 +134,8 @@ const HIITTimer = () => {
   const handleWorkoutComplete = () => {
     const updatedStreakData = recordWorkout();
     
-    // Schedule a reminder if enabled
-    if (areRemindersEnabled()) {
-      scheduleWorkoutReminder();
-    }
+    // Record workout completion for reminder system
+    recordWorkoutCompletion();
 
     return updatedStreakData;
   };

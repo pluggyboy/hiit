@@ -2,12 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { getStreakData } from '@/utils/streak';
-import { 
-  isNotificationSupported, 
-  areRemindersEnabled, 
-  enableReminders, 
-  disableReminders 
-} from '@/utils/notifications';
 
 interface StreakData {
   currentStreak: number;
@@ -23,29 +17,14 @@ const StreakDisplay: React.FC = () => {
     bestStreak: 0,
     totalWorkouts: 0
   });
-  const [notificationsSupported, setNotificationsSupported] = useState(false);
-  const [remindersEnabled, setRemindersEnabled] = useState(false);
-
-  // Load streak data and notification settings
+  
+  // Load streak data
   useEffect(() => {
     // Only run in the browser
     if (typeof window !== 'undefined') {
       setStreakData(getStreakData());
-      setNotificationsSupported(isNotificationSupported());
-      setRemindersEnabled(areRemindersEnabled());
     }
   }, []);
-
-  // Handle toggle of reminder settings
-  const handleReminderToggle = async () => {
-    if (remindersEnabled) {
-      disableReminders();
-      setRemindersEnabled(false);
-    } else {
-      const enabled = await enableReminders();
-      setRemindersEnabled(enabled);
-    }
-  };
 
   // Format date for display
   const formatDate = (dateString: string | null) => {
@@ -84,21 +63,6 @@ const StreakDisplay: React.FC = () => {
       <div className="text-sm text-gray-600 mb-4">
         Last workout: {formatDate(streakData.lastWorkoutDate)}
       </div>
-      
-      {notificationsSupported && (
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm">Daily workout reminders</span>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input 
-              type="checkbox" 
-              className="sr-only peer" 
-              checked={remindersEnabled}
-              onChange={handleReminderToggle}
-            />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-          </label>
-        </div>
-      )}
       
       {streakData.currentStreak > 0 && (
         <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">
