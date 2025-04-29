@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { recordWorkout } from '@/utils/streak';
 import { scheduleWorkoutReminder, areRemindersEnabled } from '@/utils/notifications';
 import StreakDisplay from './StreakDisplay';
+import SettingsModal from './SettingsModal';
 
 const HIITTimer = () => {
   // Map exercise names to their image paths
@@ -25,6 +26,15 @@ const HIITTimer = () => {
   const [currentRound, setCurrentRound] = useState(1);
   const [isFlashing, setIsFlashing] = useState(false);
   
+  // Configurable time settings
+  const [prepareTime, setPrepareTime] = useState(5);
+  const [exerciseTime, setExerciseTime] = useState(20);
+  const [restTime, setRestTime] = useState(0);
+  const [roundRestTime, setRoundRestTime] = useState(75);
+  
+  // Settings modal state
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
   const audioRef = useRef<HTMLAudioElement>(null);
   
   const exercises = [
@@ -35,11 +45,6 @@ const HIITTimer = () => {
     "Lunges",
     "Shoulder Press"
   ];
-  
-  const PREPARE_TIME = 5; // seconds
-  const EXERCISE_TIME = 20; // seconds
-  const REST_TIME = 0; // seconds between exercises (removed the quick break)
-  const ROUND_REST_TIME = 75; // seconds between rounds
   
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -60,7 +65,7 @@ const HIITTimer = () => {
         // Time's up - move to next phase
         if (phase === 'prepare') {
           setPhase('exercise');
-          setTimeLeft(EXERCISE_TIME);
+          setTimeLeft(exerciseTime);
           playBeep();
         } 
         else if (phase === 'exercise') {
@@ -70,7 +75,7 @@ const HIITTimer = () => {
             if (currentRound < rounds) {
               // More rounds to go
               setPhase('roundRest');
-              setTimeLeft(ROUND_REST_TIME);
+              setTimeLeft(roundRestTime);
               setCurrentRound(currentRound + 1);
               setCurrentExercise(0);
             } else {
@@ -79,22 +84,34 @@ const HIITTimer = () => {
               setPhase('idle');
             }
           } else {
-            // More exercises in this round - skip rest phase and go straight to prepare
-            setCurrentExercise(currentExercise + 1);
-            setPhase('prepare');
-            setTimeLeft(PREPARE_TIME);
+            // More exercises in this round - check if rest is enabled
+            if (restTime > 0) {
+              setPhase('rest');
+              setTimeLeft(restTime);
+              setCurrentExercise(currentExercise + 1);
+            } else {
+              // Skip rest phase
+              setCurrentExercise(currentExercise + 1);
+              setPhase('prepare');
+              setTimeLeft(prepareTime);
+            }
           }
+        }
+        else if (phase === 'rest') {
+          // Move from rest to prepare phase for next exercise
+          setPhase('prepare');
+          setTimeLeft(prepareTime);
         }
         else if (phase === 'roundRest') {
           // Start first exercise of next round
           setPhase('prepare');
-          setTimeLeft(PREPARE_TIME);
+          setTimeLeft(prepareTime);
         }
       }
     }
     
     return () => clearTimeout(timer);
-  }, [started, timeLeft, phase, currentExercise, exercises.length, completed, currentRound, rounds]);
+  }, [started, timeLeft, phase, currentExercise, exercises.length, completed, currentRound, rounds, prepareTime, exerciseTime, restTime, roundRestTime]);
   
   const startWorkout = () => {
     setStarted(true);
@@ -102,7 +119,7 @@ const HIITTimer = () => {
     setCurrentExercise(0);
     setCurrentRound(1);
     setPhase('prepare');
-    setTimeLeft(PREPARE_TIME);
+    setTimeLeft(prepareTime);
   };
   
   const resetWorkout = () => {
@@ -159,12 +176,28 @@ const HIITTimer = () => {
     }
   };
   
+  // Open and close settings modal
+  const openSettings = () => setIsSettingsOpen(true);
+  const closeSettings = () => setIsSettingsOpen(false);
+  
   return (
     <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${getBgColor()}`}>
       <audio ref={audioRef} preload="auto" src="/beep.mp3" />
 
       <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
-        <h1 className="text-2xl font-bold text-center mb-6">HIIT Workout Timer</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">HIIT Workout Timer</h1>
+          <button 
+            onClick={openSettings}
+            className="text-gray-500 hover:text-gray-700"
+            aria-label="Settings"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+        </div>
         
         {!started && !completed && (
           <div className="flex flex-col gap-4">
@@ -244,9 +277,9 @@ const HIITTimer = () => {
                 }`}
                 style={{ 
                   width: `${(timeLeft / (
-                    phase === 'prepare' ? PREPARE_TIME : 
-                    phase === 'exercise' ? EXERCISE_TIME : 
-                    phase === 'rest' ? REST_TIME : ROUND_REST_TIME
+                    phase === 'prepare' ? prepareTime : 
+                    phase === 'exercise' ? exerciseTime : 
+                    phase === 'rest' ? restTime : roundRestTime
                   )) * 100}%` 
                 }}
               ></div>
@@ -295,6 +328,20 @@ const HIITTimer = () => {
           </div>
         )}
       </div>
+      
+      {/* Settings Modal */}
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={closeSettings}
+        prepareTime={prepareTime}
+        exerciseTime={exerciseTime}
+        restTime={restTime}
+        roundRestTime={roundRestTime}
+        onPrepareTimeChange={setPrepareTime}
+        onExerciseTimeChange={setExerciseTime}
+        onRestTimeChange={setRestTime}
+        onRoundRestTimeChange={setRoundRestTime}
+      />
       
       {!started && !completed && (
         <div className="mt-6">
