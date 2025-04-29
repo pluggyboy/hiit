@@ -36,6 +36,7 @@ const HIITTimer = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement>(null);
+  const finalBeepRef = useRef<HTMLAudioElement>(null);
   
   const exercises = [
     "Goblet Squats",
@@ -54,8 +55,9 @@ const HIITTimer = () => {
         timer = setTimeout(() => {
           setTimeLeft(timeLeft - 1);
           
-          // Visual flash AND audio beep for last 5 seconds of exercise
-          if (phase === 'exercise' && timeLeft <= 5 && timeLeft > 0) {
+          // Visual flash AND audio beep for seconds 5-2 of exercise
+          // We stop at 2 to avoid playing both the countdown beep and final beep too close together
+          if (phase === 'exercise' && timeLeft <= 5 && timeLeft >= 2) {
             setIsFlashing(true);
             setTimeout(() => setIsFlashing(false), 500);
             playBeep();
@@ -69,6 +71,9 @@ const HIITTimer = () => {
           playBeep();
         } 
         else if (phase === 'exercise') {
+          // Play only the final beep sound at the end of an exercise
+          playBeep(true);
+          
           // Check if this was the last exercise of the round
           if (currentExercise === exercises.length - 1) {
             // End of round
@@ -147,13 +152,16 @@ const HIITTimer = () => {
     }
   }, [completed]);
   
-  const playBeep = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(e => {
+  const playBeep = (isFinal: boolean = false) => {
+    const audioElement = isFinal ? finalBeepRef.current : audioRef.current;
+    
+    if (audioElement) {
+      audioElement.currentTime = 0;
+      audioElement.play().catch(e => {
         console.log("Audio play failed:", e);
         // Fallback to creating a new Audio instance
-        const beep = new Audio("/beep.mp3");
+        const beepFile = isFinal ? "/final beep.mp3" : "/beep.mp3";
+        const beep = new Audio(beepFile);
         beep.play().catch(err => console.log("Fallback audio failed:", err));
       });
     }
@@ -181,8 +189,26 @@ const HIITTimer = () => {
   return (
     <div className={`min-h-screen flex flex-col items-center p-4 pt-2 ${getBgColor()}`}>
       <audio ref={audioRef} preload="auto" src="/beep.mp3" />
+      <audio ref={finalBeepRef} preload="auto" src="/final beep.mp3" />
       
-      {/* Progress bar for workout progress (only show when workout is active) */}
+      {/* App title and settings button */}
+      <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-4 mb-4">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">HIIT Workout Timer</h1>
+          <button 
+            onClick={openSettings}
+            className="text-gray-500 hover:text-gray-700"
+            aria-label="Settings"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      {/* Progress indicators - only shown during workout */}
       {started && !completed && (
         <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-4 mb-4">
           <div className="flex justify-between items-center">
@@ -216,19 +242,6 @@ const HIITTimer = () => {
       )}
 
       <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">HIIT Workout Timer</h1>
-          <button 
-            onClick={openSettings}
-            className="text-gray-500 hover:text-gray-700"
-            aria-label="Settings"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-          </button>
-        </div>
         
         {!started && !completed && (
           <div className="flex flex-col gap-4">
@@ -263,15 +276,11 @@ const HIITTimer = () => {
         {started && !completed && (
           <div className="text-center">
             <div className="mb-4">
-              <div className="text-sm font-semibold text-gray-500">
-                Round {currentRound} of {rounds}
-              </div>
-              
               {phase === 'roundRest' ? (
                 <h2 className="text-xl font-bold mb-2">Rest Between Rounds</h2>
               ) : (
                 <>
-                  <h2 className="text-xl font-bold mb-2">
+                  <h2 className="text-3xl font-bold mb-3">
                     {exercises[currentExercise]}
                   </h2>
                   <div className="relative w-full h-48 mb-4">

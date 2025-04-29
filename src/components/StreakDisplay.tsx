@@ -40,7 +40,7 @@ const StreakDisplay: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+    <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
       <h2 className="text-xl font-bold text-center mb-4">Your Workout Streak</h2>
       
       <div className="flex justify-between items-center mb-6">
