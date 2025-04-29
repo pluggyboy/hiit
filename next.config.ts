@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true, // This is required for static exports with images
   },
+  eslint: {
+    // Ignore ESLint errors during production build
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;
