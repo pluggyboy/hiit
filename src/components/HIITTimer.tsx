@@ -395,18 +395,18 @@ const HIITTimer = () => {
       
       {started && !completed && (
         <div className="mt-6 bg-white rounded-lg shadow-lg p-4 w-full max-w-md">
-          <h3 className="font-bold mb-2">Coming Up:</h3>
+          <h3 className="font-bold mb-2">Coming Up Next:</h3>
           <ul className="space-y-2">
             {exercises.map((ex, index) => {
-              if (index < currentExercise) return null;
-              if (index > currentExercise + 2) return null;
+              // Only show future exercises, not the current one
+              if (index <= currentExercise) return null;
+              // Limit to the next 3 exercises
+              if (index > currentExercise + 3) return null;
               
               return (
                 <li 
                   key={index} 
-                  className={`p-2 rounded flex items-center gap-2 ${
-                    index === currentExercise ? 'bg-green-100 font-bold' : 'text-gray-500'
-                  }`}
+                  className="p-2 rounded flex items-center gap-2 text-gray-500"
                 >
                   <div className="relative w-10 h-10 flex-shrink-0">
                     <Image 
@@ -420,6 +420,11 @@ const HIITTimer = () => {
                 </li>
               );
             })}
+            {currentExercise >= exercises.length - 1 && (
+              <li className="p-2 text-gray-500 italic text-center">
+                Last exercise in this round
+              </li>
+            )}
           </ul>
         </div>
       )}
