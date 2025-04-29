@@ -179,8 +179,41 @@ const HIITTimer = () => {
   const closeSettings = () => setIsSettingsOpen(false);
   
   return (
-    <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${getBgColor()}`}>
+    <div className={`min-h-screen flex flex-col items-center p-4 pt-2 ${getBgColor()}`}>
       <audio ref={audioRef} preload="auto" src="/beep.mp3" />
+      
+      {/* Progress bar for workout progress (only show when workout is active) */}
+      {started && !completed && (
+        <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-4 mb-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-base">Round:</span>
+              <div className="flex items-center">
+                <span className="text-xl font-semibold">{currentRound}/{rounds}</span>
+                <div className="w-24 h-3 bg-gray-200 rounded-full ml-2">
+                  <div 
+                    className="h-3 bg-blue-500 rounded-full" 
+                    style={{ width: `${(currentRound / rounds) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-base">Exercise:</span>
+              <div className="flex items-center">
+                <span className="text-xl font-semibold">{currentExercise + 1}/{exercises.length}</span>
+                <div className="w-24 h-3 bg-gray-200 rounded-full ml-2">
+                  <div 
+                    className="h-3 bg-green-500 rounded-full" 
+                    style={{ width: `${((currentExercise + 1) / exercises.length) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-6">
         <div className="flex justify-between items-center mb-6">
