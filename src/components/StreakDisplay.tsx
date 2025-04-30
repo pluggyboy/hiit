@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { getStreakData } from '@/utils/streak';
 
 interface StreakData {
@@ -10,7 +10,11 @@ interface StreakData {
   totalWorkouts: number;
 }
 
-const StreakDisplay: React.FC = () => {
+export interface StreakDisplayRef {
+  refreshStreakData: () => void;
+}
+
+const StreakDisplay = forwardRef<StreakDisplayRef, {}>((props, ref) => {
   const [streakData, setStreakData] = useState<StreakData>({
     currentStreak: 0,
     lastWorkoutDate: null,
@@ -25,6 +29,18 @@ const StreakDisplay: React.FC = () => {
       setStreakData(getStreakData());
     }
   }, []);
+  
+  // Refresh streak data manually
+  const refreshStreakData = () => {
+    if (typeof window !== 'undefined') {
+      setStreakData(getStreakData());
+    }
+  };
+  
+  // Expose the refresh method to parent components
+  useImperativeHandle(ref, () => ({
+    refreshStreakData
+  }));
 
   // Format date for display
   const formatDate = (dateString: string | null) => {
@@ -86,6 +102,6 @@ const StreakDisplay: React.FC = () => {
       )}
     </div>
   );
-};
+});
 
 export default StreakDisplay;

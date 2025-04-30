@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { recordWorkout } from '@/utils/streak';
+import { recordWorkout, getStreakData } from '@/utils/streak';
 import { recordWorkoutCompletion, areRemindersEnabled } from '@/utils/notifications';
-import StreakDisplay from './StreakDisplay';
+import StreakDisplay, { StreakDisplayRef } from './StreakDisplay';
 import SettingsModal from './SettingsModal';
+import ReactConfetti from 'react-confetti';
 
 const HIITTimer = () => {
   // Map exercise names to their image paths
@@ -25,6 +26,7 @@ const HIITTimer = () => {
   const [rounds, setRounds] = useState(3);
   const [currentRound, setCurrentRound] = useState(1);
   const [isFlashing, setIsFlashing] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   
   // Configurable time settings
   const [prepareTime, setPrepareTime] = useState(5);
@@ -37,6 +39,8 @@ const HIITTimer = () => {
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const finalBeepRef = useRef<HTMLAudioElement>(null);
+  const finishedAudioRef = useRef<HTMLAudioElement>(null);
+  const streakDisplayRef = useRef<StreakDisplayRef>(null);
   
   const exercises = [
     "Goblet Squats",
@@ -135,12 +139,35 @@ const HIITTimer = () => {
     setPhase('idle');
   };
 
+  // Play completion sound
+  const playFinishedSound = () => {
+    if (finishedAudioRef.current) {
+      finishedAudioRef.current.currentTime = 0;
+      finishedAudioRef.current.play().catch(e => {
+        console.log("Finished audio play failed:", e);
+        // Fallback to creating a new Audio instance
+        const finishedSound = new Audio("/finished.mp3");
+        finishedSound.play().catch(err => console.log("Fallback finished audio failed:", err));
+      });
+    }
+  };
+
   // Record workout completion and update streak
   const handleWorkoutComplete = () => {
+    // Update streak data
     const updatedStreakData = recordWorkout();
     
     // Record workout completion for reminder system
     recordWorkoutCompletion();
+
+    // Play celebration effects
+    setShowConfetti(true);
+    playFinishedSound();
+    
+    // Update streak display
+    if (streakDisplayRef.current) {
+      streakDisplayRef.current.refreshStreakData();
+    }
 
     return updatedStreakData;
   };
@@ -151,6 +178,19 @@ const HIITTimer = () => {
       handleWorkoutComplete();
     }
   }, [completed]);
+  
+  // Clear confetti after 5 seconds
+  useEffect(() => {
+    let confettiTimer: NodeJS.Timeout;
+    
+    if (showConfetti) {
+      confettiTimer = setTimeout(() => {
+        setShowConfetti(false);
+      }, 5000);
+    }
+    
+    return () => clearTimeout(confettiTimer);
+  }, [showConfetti]);
   
   const playBeep = (isFinal: boolean = false) => {
     const audioElement = isFinal ? finalBeepRef.current : audioRef.current;
@@ -190,6 +230,17 @@ const HIITTimer = () => {
     <div className={`min-h-screen flex flex-col items-center p-4 pt-2 ${getBgColor()}`}>
       <audio ref={audioRef} preload="auto" src="/beep.mp3" />
       <audio ref={finalBeepRef} preload="auto" src="/final beep.mp3" />
+      <audio ref={finishedAudioRef} preload="auto" src="/finished.mp3" />
+      
+      {showConfetti && (
+        <ReactConfetti
+          width={window.innerWidth}
+          height={window.innerHeight}
+          recycle={false}
+          numberOfPieces={500}
+          gravity={0.1}
+        />
+      )}
       
       {/* App title and settings button - only show when not in workout */}
       {!started && (
@@ -368,7 +419,7 @@ const HIITTimer = () => {
             </div>
             
             {/* Show streak information */}
-            <StreakDisplay />
+            <StreakDisplay ref={streakDisplayRef} />
           </div>
         )}
       </div>
@@ -389,7 +440,7 @@ const HIITTimer = () => {
       
       {!started && !completed && (
         <div className="mt-6">
-          <StreakDisplay />
+          <StreakDisplay ref={streakDisplayRef} />
         </div>
       )}
       
