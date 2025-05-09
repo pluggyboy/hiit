@@ -4,6 +4,44 @@ import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { recordWorkout, getStreakData } from '@/utils/streak';
 import { recordWorkoutCompletion, areRemindersEnabled } from '@/utils/notifications';
+
+// Timer settings storage keys and defaults
+const TIMER_SETTINGS_KEY = 'hiit-timer-settings';
+const DEFAULT_PREPARE_TIME = 5;
+const DEFAULT_EXERCISE_TIME = 20;
+const DEFAULT_REST_TIME = 0;
+const DEFAULT_ROUND_REST_TIME = 75;
+
+// Functions to save and load timer settings
+const saveTimerSettings = (settings: {
+  prepareTime: number;
+  exerciseTime: number;
+  restTime: number;
+  roundRestTime: number;
+}) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(TIMER_SETTINGS_KEY, JSON.stringify(settings));
+  }
+};
+
+const loadTimerSettings = () => {
+  if (typeof window !== 'undefined') {
+    const savedSettings = localStorage.getItem(TIMER_SETTINGS_KEY);
+    if (savedSettings) {
+      try {
+        return JSON.parse(savedSettings);
+      } catch (e) {
+        console.error('Error parsing saved timer settings:', e);
+      }
+    }
+  }
+  return {
+    prepareTime: DEFAULT_PREPARE_TIME,
+    exerciseTime: DEFAULT_EXERCISE_TIME,
+    restTime: DEFAULT_REST_TIME,
+    roundRestTime: DEFAULT_ROUND_REST_TIME
+  };
+};
 import StreakDisplay, { StreakDisplayRef } from './StreakDisplay';
 import SettingsModal from './SettingsModal';
 import ReactConfetti from 'react-confetti';
@@ -28,14 +66,33 @@ const HIITTimer = () => {
   const [isFlashing, setIsFlashing] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   
-  // Configurable time settings
-  const [prepareTime, setPrepareTime] = useState(5);
-  const [exerciseTime, setExerciseTime] = useState(20);
-  const [restTime, setRestTime] = useState(0);
-  const [roundRestTime, setRoundRestTime] = useState(75);
+  // Configurable time settings with localStorage persistence
+  const [prepareTime, setPrepareTime] = useState(DEFAULT_PREPARE_TIME);
+  const [exerciseTime, setExerciseTime] = useState(DEFAULT_EXERCISE_TIME);
+  const [restTime, setRestTime] = useState(DEFAULT_REST_TIME);
+  const [roundRestTime, setRoundRestTime] = useState(DEFAULT_ROUND_REST_TIME);
   
   // Settings modal state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // Load saved settings on component mount
+  useEffect(() => {
+    const savedSettings = loadTimerSettings();
+    setPrepareTime(savedSettings.prepareTime);
+    setExerciseTime(savedSettings.exerciseTime);
+    setRestTime(savedSettings.restTime);
+    setRoundRestTime(savedSettings.roundRestTime);
+  }, []);
+  
+  // Save settings whenever they change
+  useEffect(() => {
+    saveTimerSettings({
+      prepareTime,
+      exerciseTime,
+      restTime,
+      roundRestTime
+    });
+  }, [prepareTime, exerciseTime, restTime, roundRestTime]);
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const finalBeepRef = useRef<HTMLAudioElement>(null);
