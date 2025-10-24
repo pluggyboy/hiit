@@ -473,13 +473,11 @@ const HIITTimer = () => {
               End Workout
             </button>
 
-            {/* Full-screen overlay during round rest */}
+            {/* Countdown overlay during round rest - just the number with 50% opacity */}
             {phase === 'roundRest' && (
-              <div className="absolute inset-0 bg-purple-600 bg-opacity-50 flex flex-col items-center justify-center rounded-lg">
-                <div className="text-white text-center">
-                  <div className="text-2xl font-bold mb-2">Rest Between Rounds</div>
-                  <div className="text-8xl font-bold mb-2">{formatTime(timeLeft)}</div>
-                  <div className="text-lg">Get ready for Round {currentRound}</div>
+              <div className="absolute inset-0 flex items-center justify-center rounded-lg pointer-events-none">
+                <div className="text-9xl font-bold text-black opacity-50">
+                  {formatTime(timeLeft)}
                 </div>
               </div>
             )}
