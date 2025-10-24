@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { recordWorkout } from '@/utils/streak';
 import { recordWorkoutCompletion } from '@/utils/notifications';
+import { loadExercises, saveExercises, resetExercises as resetExerciseOrder, EXERCISE_IMAGES } from '@/utils/exercises';
 
 // Timer settings storage keys and defaults
 const TIMER_SETTINGS_KEY = 'hiit-timer-settings';
@@ -47,15 +48,8 @@ import SettingsModal from './SettingsModal';
 import ReactConfetti from 'react-confetti';
 
 const HIITTimer = () => {
-  // Map exercise names to their image paths
-  const exerciseImages: Record<string, string> = {
-    "Goblet Squats": "/goblet squat.png",
-    "Push-ups/Chest Press": "/push ups.png",
-    "Romanian Deadlifts": "/romanian_deadlift.png",
-    "Dumbbell Rows": "/dumbell row.png",
-    "Lunges": "/lunges.png",
-    "Shoulder Press": "/shoulder press.png"
-  };
+  // Exercise list and images
+  const [exercises, setExercises] = useState<string[]>([]);
   const [started, setStarted] = useState(false);
   const [currentExercise, setCurrentExercise] = useState(0);
   const [phase, setPhase] = useState('idle'); // idle, prepare, exercise, rest
@@ -119,16 +113,24 @@ const HIITTimer = () => {
   const finalBeepRef = useRef<HTMLAudioElement>(null);
   const finishedAudioRef = useRef<HTMLAudioElement>(null);
   const streakDisplayRef = useRef<StreakDisplayRef>(null);
-  
-  const exercises = [
-    "Goblet Squats",
-    "Push-ups/Chest Press",
-    "Romanian Deadlifts",
-    "Dumbbell Rows",
-    "Lunges",
-    "Shoulder Press"
-  ];
-  
+
+  // Load exercises on mount
+  useEffect(() => {
+    setExercises(loadExercises());
+  }, []);
+
+  // Handle exercise reordering
+  const handleExercisesChange = (newExercises: string[]) => {
+    setExercises(newExercises);
+    saveExercises(newExercises);
+  };
+
+  // Handle reset exercises
+  const handleResetExercises = () => {
+    const defaultExercises = resetExerciseOrder();
+    setExercises(defaultExercises);
+  };
+
   useEffect(() => {
     let timer: NodeJS.Timeout;
     
@@ -417,8 +419,8 @@ const HIITTimer = () => {
                     {exercises[currentExercise]}
                   </h2>
                   <div className="relative w-full h-48 mb-4">
-                    <Image 
-                      src={exerciseImages[exercises[currentExercise]]}
+                    <Image
+                      src={EXERCISE_IMAGES[exercises[currentExercise]]}
                       alt={exercises[currentExercise]}
                       fill
                       style={{ objectFit: 'contain' }}
@@ -503,7 +505,7 @@ const HIITTimer = () => {
       </div>
       
       {/* Settings Modal */}
-      <SettingsModal 
+      <SettingsModal
         isOpen={isSettingsOpen}
         onClose={closeSettings}
         prepareTime={prepareTime}
@@ -514,6 +516,10 @@ const HIITTimer = () => {
         onExerciseTimeChange={setExerciseTime}
         onRestTimeChange={setRestTime}
         onRoundRestTimeChange={setRoundRestTime}
+        exercises={exercises}
+        exerciseImages={EXERCISE_IMAGES}
+        onExercisesChange={handleExercisesChange}
+        onResetExercises={handleResetExercises}
       />
       
       {!started && !completed && (
@@ -538,8 +544,8 @@ const HIITTimer = () => {
                   className="p-2 rounded flex items-center gap-2 text-gray-500"
                 >
                   <div className="relative w-10 h-10 flex-shrink-0">
-                    <Image 
-                      src={exerciseImages[ex]}
+                    <Image
+                      src={EXERCISE_IMAGES[ex]}
                       alt={ex}
                       fill
                       style={{ objectFit: 'cover' }}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { areRemindersEnabled, enableReminders, disableReminders } from '@/utils/notifications';
+import ExerciseList from './ExerciseList';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -14,6 +15,10 @@ interface SettingsModalProps {
   onExerciseTimeChange: (value: number) => void;
   onRestTimeChange: (value: number) => void;
   onRoundRestTimeChange: (value: number) => void;
+  exercises: string[];
+  exerciseImages: Record<string, string>;
+  onExercisesChange: (exercises: string[]) => void;
+  onResetExercises: () => void;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -26,8 +31,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onPrepareTimeChange,
   onExerciseTimeChange,
   onRestTimeChange,
-  onRoundRestTimeChange
+  onRoundRestTimeChange,
+  exercises,
+  exerciseImages,
+  onExercisesChange,
+  onResetExercises
 }) => {
+  const [activeTab, setActiveTab] = useState<'timer' | 'exercises'>('timer');
   const [notificationsSupported, setNotificationsSupported] = useState(false);
   const [remindersEnabled, setRemindersEnabled] = useState(false);
 
@@ -53,9 +63,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Settings</h2>
           <button
             onClick={onClose}
@@ -68,7 +78,34 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
         </div>
 
-        <div className="space-y-6">
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200 mb-4">
+          <button
+            onClick={() => setActiveTab('timer')}
+            className={`flex-1 py-2 px-4 text-center font-medium transition-colors ${
+              activeTab === 'timer'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Timer
+          </button>
+          <button
+            onClick={() => setActiveTab('exercises')}
+            className={`flex-1 py-2 px-4 text-center font-medium transition-colors ${
+              activeTab === 'exercises'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Exercises
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="flex-1 overflow-y-auto">
+          {activeTab === 'timer' && (
+            <div className="space-y-6">
           {/* Preparation Time Slider */}
           <div>
             <label className="flex justify-between mb-2">
@@ -137,24 +174,42 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             />
           </div>
 
-          {/* Notification Settings */}
-          {notificationsSupported && (
-            <div className="pt-4 border-t border-gray-200 space-y-3">
-              <div className="flex items-center justify-between">
-                <span>Daily workout reminders</span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only peer" 
-                    checked={remindersEnabled}
-                    onChange={handleReminderToggle}
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-              </div>
-              <p className="text-xs text-gray-500">
-                When enabled, you&apos;ll receive workout reminders at 9am, 12pm, 3pm, 6pm, and 9pm until you complete your daily workout. Reminders stop for the day once you complete a workout.
-              </p>
+              {/* Notification Settings */}
+              {notificationsSupported && (
+                <div className="pt-4 border-t border-gray-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span>Daily workout reminders</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={remindersEnabled}
+                        onChange={handleReminderToggle}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    When enabled, you&apos;ll receive workout reminders at 9am, 12pm, 3pm, 6pm, and 9pm until you complete your daily workout. Reminders stop for the day once you complete a workout.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'exercises' && (
+            <div className="space-y-4">
+              <ExerciseList
+                exercises={exercises}
+                exerciseImages={exerciseImages}
+                onReorder={onExercisesChange}
+              />
+              <button
+                onClick={onResetExercises}
+                className="w-full py-2 px-4 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+              >
+                Reset to Default Order
+              </button>
             </div>
           )}
         </div>
