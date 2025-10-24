@@ -1,5 +1,13 @@
-<svg width="192" height="192" xmlns="http://www.w3.org/2000/svg">
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background fills entire canvas for maskable icon -->
   <rect width="192" height="192" fill="#10b981"/>
-  <text x="96" y="96" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">HIIT</text>
-  <text x="96" y="140" font-family="Arial, sans-serif" font-size="24" fill="white" text-anchor="middle" dominant-baseline="middle">Timer</text>
+
+  <!-- Content in safe zone (center 80%) -->
+  <g transform="translate(96, 96)">
+    <!-- HIIT text -->
+    <text x="0" y="-10" font-family="Arial, Helvetica, sans-serif" font-size="64" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">HIIT</text>
+
+    <!-- Timer text -->
+    <text x="0" y="30" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="white" text-anchor="middle" dominant-baseline="middle">Timer</text>
+  </g>
 </svg>
