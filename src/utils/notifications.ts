@@ -1,4 +1,4 @@
-// Notification utilities
+// Notification utilities for PWA
 
 // Daily reminder times (24-hour format)
 export const REMINDER_TIMES = [
@@ -12,7 +12,7 @@ export const REMINDER_TIMES = [
 // Local storage keys
 const REMINDERS_ENABLED_KEY = 'workoutRemindersEnabled';
 const LAST_WORKOUT_DATE_KEY = 'lastWorkoutDate';
-const REMINDER_TIMERS_KEY = 'reminderTimers';
+const LAST_REMINDER_SHOWN_KEY = 'lastReminderShown';
 
 // Check if notifications are supported
 export const isNotificationSupported = (): boolean => {
@@ -35,41 +35,76 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
   return permission === 'granted';
 };
 
-// Send a notification
-export const sendNotification = (title: string, options?: NotificationOptions): boolean => {
+// Send a notification via service worker (works better on Android)
+export const sendNotification = async (title: string, options?: NotificationOptions): Promise<boolean> => {
   if (!isNotificationSupported() || Notification.permission !== 'granted') {
     return false;
   }
 
   try {
-    new Notification(title, options);
-    return true;
+    // Try to use service worker if available (better for PWA)
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(title, {
+        icon: '/icon-192.svg',
+        badge: '/favicon.ico',
+        tag: 'workout-reminder',
+        renotify: true,
+        requireInteraction: true,
+        ...options
+      } as NotificationOptions);
+      return true;
+    } else {
+      // Fallback to regular notification
+      new Notification(title, options);
+      return true;
+    }
   } catch (error) {
     console.error('Error sending notification:', error);
     return false;
   }
 };
 
-// Get time until a specific hour and minute today (or tomorrow if already passed)
-const getTimeUntil = (hour: number, minute: number): number => {
+// Get the next scheduled reminder time
+const getNextReminderTime = (): { hour: number; minute: number } | null => {
   const now = new Date();
-  const target = new Date(now);
-  
-  target.setHours(hour, minute, 0, 0);
-  
-  // If the target time has already passed today, set it for tomorrow
-  if (target.getTime() <= now.getTime()) {
-    target.setDate(target.getDate() + 1);
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+
+  // Find the next reminder time today
+  for (const time of REMINDER_TIMES) {
+    if (time.hour > currentHour || (time.hour === currentHour && time.minute > currentMinute)) {
+      return time;
+    }
   }
-  
-  return target.getTime() - now.getTime();
+
+  // If no more reminders today, return the first one for tomorrow
+  return REMINDER_TIMES[0];
 };
 
-// Clear all existing reminder timers
-const clearReminderTimers = (): void => {
-  const timerIds = JSON.parse(localStorage.getItem(REMINDER_TIMERS_KEY) || '[]');
-  timerIds.forEach((id: number) => window.clearTimeout(id));
-  localStorage.setItem(REMINDER_TIMERS_KEY, '[]');
+// Check if we should show a reminder now
+const shouldShowReminderNow = (): boolean => {
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+
+  // Check if current time matches any reminder time (within 5 minutes)
+  for (const time of REMINDER_TIMES) {
+    const timeDiff = Math.abs((currentHour * 60 + currentMinute) - (time.hour * 60 + time.minute));
+    if (timeDiff <= 5) {
+      // Check if we already showed a reminder in the last hour
+      const lastShown = localStorage.getItem(LAST_REMINDER_SHOWN_KEY);
+      if (lastShown) {
+        const hoursSinceLastReminder = (Date.now() - parseInt(lastShown)) / (1000 * 60 * 60);
+        if (hoursSinceLastReminder < 1) {
+          return false; // Don't spam notifications
+        }
+      }
+      return true;
+    }
+  }
+
+  return false;
 };
 
 // Check if a workout was completed today
@@ -83,66 +118,72 @@ const workoutCompletedToday = (): boolean => {
   return today === lastWorkoutDay;
 };
 
-// Schedule all notification reminders for the day
-export const scheduleAllReminders = (): number[] => {
+// Check and show reminder if needed (call this when app opens or comes to foreground)
+export const checkAndShowReminder = async (): Promise<void> => {
   if (!isNotificationSupported() || Notification.permission !== 'granted') {
-    return [];
+    return;
   }
-  
-  // Clear any existing timers
-  clearReminderTimers();
-  
-  // If workout already completed today, don't schedule reminders
+
+  if (!areRemindersEnabled()) {
+    return;
+  }
+
+  // If workout already completed today, don't show reminders
   if (workoutCompletedToday()) {
-    return [];
+    return;
   }
-  
-  const timerIds: number[] = [];
-  
-  // Schedule a reminder for each time
-  REMINDER_TIMES.forEach(({ hour, minute }) => {
-    const timeUntil = getTimeUntil(hour, minute);
-    
-    // Only schedule reminders for future times
-    if (timeUntil > 0) {
-      const formattedTime = `${hour % 12 || 12}:${minute.toString().padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'}`;
-      
-      const timerId = window.setTimeout(() => {
-        // Check again if workout was completed before sending notification
-        if (!workoutCompletedToday()) {
-          sendNotification('Time for your HIIT Workout!', {
-            body: `It's ${formattedTime} - a perfect time to maintain your workout streak!`,
-            icon: '/favicon.ico',
-            requireInteraction: true
-          });
-        }
-        
-        // After sending, schedule the same reminder for tomorrow
-        scheduleAllReminders();
-      }, timeUntil);
-      
-      timerIds.push(timerId);
+
+  // Check if we should show a reminder now
+  if (shouldShowReminderNow()) {
+    const nextTime = getNextReminderTime();
+    if (nextTime) {
+      const formattedTime = `${nextTime.hour % 12 || 12}:${nextTime.minute.toString().padStart(2, '0')} ${nextTime.hour < 12 ? 'AM' : 'PM'}`;
+
+      await sendNotification('Time for your HIIT Workout!', {
+        body: `It's around ${formattedTime} - a perfect time to maintain your workout streak!`,
+        icon: '/icon-192.svg',
+        badge: '/favicon.ico',
+        requireInteraction: true
+      });
+
+      // Mark that we showed a reminder
+      localStorage.setItem(LAST_REMINDER_SHOWN_KEY, Date.now().toString());
     }
-  });
-  
-  // Store timer IDs in local storage
-  localStorage.setItem(REMINDER_TIMERS_KEY, JSON.stringify(timerIds));
-  
-  return timerIds;
+  }
+};
+
+// Setup periodic checks for reminders (called when app is active)
+export const setupReminderChecks = (): (() => void) => {
+  // Check immediately
+  checkAndShowReminder();
+
+  // Check every 5 minutes while app is active
+  const intervalId = setInterval(() => {
+    checkAndShowReminder();
+  }, 5 * 60 * 1000); // 5 minutes
+
+  // Also check when page becomes visible
+  const handleVisibilityChange = () => {
+    if (!document.hidden) {
+      checkAndShowReminder();
+    }
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  // Return cleanup function
+  return () => {
+    clearInterval(intervalId);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  };
 };
 
 // Record workout completion
 export const recordWorkoutCompletion = (): void => {
   const today = new Date().toISOString();
   localStorage.setItem(LAST_WORKOUT_DATE_KEY, today);
-  
-  // Clear reminders for today since workout is completed
-  clearReminderTimers();
-  
-  // Schedule reminders for tomorrow
-  if (areRemindersEnabled()) {
-    scheduleAllReminders();
-  }
+
+  // No need to clear timers with new system - it checks workout completion automatically
 };
 
 // Check if reminders are enabled
@@ -156,7 +197,8 @@ export const enableReminders = async (): Promise<boolean> => {
   const hasPermission = await requestNotificationPermission();
   if (hasPermission) {
     localStorage.setItem(REMINDERS_ENABLED_KEY, 'true');
-    scheduleAllReminders();
+    // Check immediately if we should show a reminder
+    checkAndShowReminder();
     return true;
   }
   return false;
@@ -165,5 +207,4 @@ export const enableReminders = async (): Promise<boolean> => {
 // Disable workout reminders
 export const disableReminders = (): void => {
   localStorage.setItem(REMINDERS_ENABLED_KEY, 'false');
-  clearReminderTimers();
 };

@@ -2,16 +2,17 @@
 
 import { useEffect } from 'react';
 import { registerServiceWorker } from '@/utils/serviceWorker';
-import { areRemindersEnabled, scheduleAllReminders } from '@/utils/notifications';
+import { areRemindersEnabled, setupReminderChecks } from '@/utils/notifications';
 
 const ServiceWorkerRegistration = () => {
   useEffect(() => {
     // Register service worker after component mounts (client-side only)
     registerServiceWorker();
-    
-    // Schedule reminders if they're enabled
+
+    // Setup reminder checks if they're enabled
     if (areRemindersEnabled()) {
-      scheduleAllReminders();
+      const cleanup = setupReminderChecks();
+      return cleanup; // Cleanup on unmount
     }
   }, []);
 

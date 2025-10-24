@@ -14,7 +14,8 @@ export interface StreakDisplayRef {
   refreshStreakData: () => void;
 }
 
-type StreakDisplayProps = Record<string, never>;
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface StreakDisplayProps {}
 
 const StreakDisplay = forwardRef<StreakDisplayRef, StreakDisplayProps>((props, ref) => {
   const [streakData, setStreakData] = useState<StreakData>({
