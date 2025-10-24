@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { recordWorkout, getStreakData } from '@/utils/streak';
-import { recordWorkoutCompletion, areRemindersEnabled } from '@/utils/notifications';
+import { recordWorkout } from '@/utils/streak';
+import { recordWorkoutCompletion } from '@/utils/notifications';
 
 // Timer settings storage keys and defaults
 const TIMER_SETTINGS_KEY = 'hiit-timer-settings';
@@ -65,6 +65,7 @@ const HIITTimer = () => {
   const [currentRound, setCurrentRound] = useState(1);
   const [isFlashing, setIsFlashing] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 });
   
   // Configurable time settings with localStorage persistence
   const [prepareTime, setPrepareTime] = useState(DEFAULT_PREPARE_TIME);
@@ -93,6 +94,26 @@ const HIITTimer = () => {
       roundRestTime
     });
   }, [prepareTime, exerciseTime, restTime, roundRestTime]);
+
+  // Set window dimensions for confetti (client-side only)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setWindowDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+
+      const handleResize = () => {
+        setWindowDimensions({
+          width: window.innerWidth,
+          height: window.innerHeight
+        });
+      };
+
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const finalBeepRef = useRef<HTMLAudioElement>(null);
@@ -210,31 +231,31 @@ const HIITTimer = () => {
   };
 
   // Record workout completion and update streak
-  const handleWorkoutComplete = () => {
+  const handleWorkoutComplete = useCallback(() => {
     // Update streak data
     const updatedStreakData = recordWorkout();
-    
+
     // Record workout completion for reminder system
     recordWorkoutCompletion();
 
     // Play celebration effects
     setShowConfetti(true);
     playFinishedSound();
-    
+
     // Update streak display
     if (streakDisplayRef.current) {
       streakDisplayRef.current.refreshStreakData();
     }
 
     return updatedStreakData;
-  };
+  }, []);
 
   // Effect to handle workout completion
   useEffect(() => {
     if (completed) {
       handleWorkoutComplete();
     }
-  }, [completed]);
+  }, [completed, handleWorkoutComplete]);
   
   // Clear confetti after 5 seconds
   useEffect(() => {
@@ -289,10 +310,10 @@ const HIITTimer = () => {
       <audio ref={finalBeepRef} preload="auto" src="/final beep.mp3" />
       <audio ref={finishedAudioRef} preload="auto" src="/finished.mp3" />
       
-      {showConfetti && (
+      {showConfetti && windowDimensions.width > 0 && (
         <ReactConfetti
-          width={window.innerWidth}
-          height={window.innerHeight}
+          width={windowDimensions.width}
+          height={windowDimensions.height}
           recycle={false}
           numberOfPieces={500}
           gravity={0.1}
@@ -459,7 +480,7 @@ const HIITTimer = () => {
         {completed && (
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">Workout Complete!</h2>
-            <p className="mb-6">Great job! You've completed all {rounds} rounds.</p>
+            <p className="mb-6">Great job! You&apos;ve completed all {rounds} rounds.</p>
             <div className="flex justify-center gap-2 mb-6">
               <button 
                 className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"

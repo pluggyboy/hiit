@@ -14,7 +14,9 @@ export interface StreakDisplayRef {
   refreshStreakData: () => void;
 }
 
-const StreakDisplay = forwardRef<StreakDisplayRef, {}>((props, ref) => {
+type StreakDisplayProps = Record<string, never>;
+
+const StreakDisplay = forwardRef<StreakDisplayRef, StreakDisplayProps>((props, ref) => {
   const [streakData, setStreakData] = useState<StreakData>({
     currentStreak: 0,
     lastWorkoutDate: null,
@@ -83,7 +85,7 @@ const StreakDisplay = forwardRef<StreakDisplayRef, {}>((props, ref) => {
       {streakData.currentStreak > 0 && (
         <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">
           <p className="font-semibold">🔥 Keep it up!</p>
-          <p>You're on a {streakData.currentStreak} day streak. Don't break the chain!</p>
+          <p>You&apos;re on a {streakData.currentStreak} day streak. Don&apos;t break the chain!</p>
         </div>
       )}
       
@@ -103,5 +105,7 @@ const StreakDisplay = forwardRef<StreakDisplayRef, {}>((props, ref) => {
     </div>
   );
 });
+
+StreakDisplay.displayName = 'StreakDisplay';
 
 export default StreakDisplay;

@@ -153,7 +153,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 </label>
               </div>
               <p className="text-xs text-gray-500">
-                When enabled, you'll receive workout reminders at 9am, 12pm, 3pm, 6pm, and 9pm until you complete your daily workout. Reminders stop for the day once you complete a workout.
+                When enabled, you&apos;ll receive workout reminders at 9am, 12pm, 3pm, 6pm, and 9pm until you complete your daily workout. Reminders stop for the day once you complete a workout.
               </p>
             </div>
           )}
