@@ -192,9 +192,10 @@ const HIITTimer = () => {
           setTimeLeft(prepareTime);
         }
         else if (phase === 'roundRest') {
-          // Start first exercise of next round
-          setPhase('prepare');
-          setTimeLeft(prepareTime);
+          // Start first exercise of next round - skip prepare, go straight to exercise
+          setPhase('exercise');
+          setTimeLeft(exerciseTime);
+          playBeep();
         }
       }
     }
@@ -411,29 +412,33 @@ const HIITTimer = () => {
         {started && !completed && (
           <div className="text-center">
             <div className="mb-4">
-              {phase === 'roundRest' ? (
-                <h2 className="text-xl font-bold mb-2">Rest Between Rounds</h2>
-              ) : (
-                <>
-                  <h2 className="text-3xl font-bold mb-3">
-                    {exercises[currentExercise]}
-                  </h2>
-                  <div className="relative w-full h-48 mb-4">
-                    <Image
-                      src={EXERCISE_IMAGES[exercises[currentExercise]]}
-                      alt={exercises[currentExercise]}
-                      fill
-                      style={{ objectFit: 'contain' }}
-                      priority
-                    />
+              <h2 className="text-3xl font-bold mb-3">
+                {exercises[currentExercise]}
+              </h2>
+              <div className="relative w-full h-48 mb-4">
+                <Image
+                  src={EXERCISE_IMAGES[exercises[currentExercise]]}
+                  alt={exercises[currentExercise]}
+                  fill
+                  style={{ objectFit: 'contain' }}
+                  priority
+                />
+                {/* Overlay during round rest */}
+                {phase === 'roundRest' && (
+                  <div className="absolute inset-0 bg-purple-500 bg-opacity-75 flex items-center justify-center rounded-lg">
+                    <div className="text-white text-center">
+                      <div className="text-xl font-bold mb-1">Rest Between Rounds</div>
+                      <div className="text-sm">Next up: {exercises[currentExercise]}</div>
+                    </div>
                   </div>
-                </>
-              )}
-              
+                )}
+              </div>
+
               <div className="text-sm text-gray-500">
                 {phase === 'prepare' && 'Get Ready!'}
                 {phase === 'exercise' && 'Work!'}
-                {phase === 'roundRest' && 'Round Rest'}
+                {phase === 'roundRest' && 'Get Ready for Round ' + currentRound}
+                {phase === 'rest' && 'Rest'}
               </div>
             </div>
             
