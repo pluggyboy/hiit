@@ -433,11 +433,14 @@ const HIITTimer = () => {
               </div>
             </div>
 
-            <div className="flex justify-center mb-4">
-              <div className={`text-6xl font-bold ${isFlashing && phase === 'exercise' ? 'bg-red-500 text-white px-4 rounded-lg' : ''}`}>
-                {formatTime(timeLeft)}
+            {/* Hide normal countdown during round rest */}
+            {phase !== 'roundRest' && (
+              <div className="flex justify-center mb-4">
+                <div className={`text-6xl font-bold ${isFlashing && phase === 'exercise' ? 'bg-red-500 text-white px-4 rounded-lg' : ''}`}>
+                  {formatTime(timeLeft)}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
               <div
@@ -473,10 +476,10 @@ const HIITTimer = () => {
               End Workout
             </button>
 
-            {/* Countdown overlay during round rest - just the number with 50% opacity */}
+            {/* Countdown overlay during round rest - huge number with 50% opacity */}
             {phase === 'roundRest' && (
               <div className="absolute inset-0 flex items-center justify-center rounded-lg pointer-events-none">
-                <div className="text-9xl font-bold text-black opacity-50">
+                <div className="font-bold text-black opacity-50" style={{ fontSize: '12rem' }}>
                   {formatTime(timeLeft)}
                 </div>
               </div>
