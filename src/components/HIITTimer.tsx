@@ -410,7 +410,7 @@ const HIITTimer = () => {
         )}
         
         {started && !completed && (
-          <div className="text-center">
+          <div className="text-center relative">
             <div className="mb-4">
               <h2 className="text-3xl font-bold mb-3">
                 {exercises[currentExercise]}
@@ -423,15 +423,6 @@ const HIITTimer = () => {
                   style={{ objectFit: 'contain' }}
                   priority
                 />
-                {/* Overlay during round rest */}
-                {phase === 'roundRest' && (
-                  <div className="absolute inset-0 bg-purple-500 bg-opacity-75 flex items-center justify-center rounded-lg">
-                    <div className="text-white text-center">
-                      <div className="text-xl font-bold mb-1">Rest Between Rounds</div>
-                      <div className="text-sm">Next up: {exercises[currentExercise]}</div>
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div className="text-sm text-gray-500">
@@ -441,30 +432,30 @@ const HIITTimer = () => {
                 {phase === 'rest' && 'Rest'}
               </div>
             </div>
-            
+
             <div className="flex justify-center mb-4">
               <div className={`text-6xl font-bold ${isFlashing && phase === 'exercise' ? 'bg-red-500 text-white px-4 rounded-lg' : ''}`}>
                 {formatTime(timeLeft)}
               </div>
             </div>
-            
+
             <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
-              <div 
+              <div
                 className={`h-2.5 rounded-full ${
-                  phase === 'prepare' ? 'bg-yellow-500' : 
-                  phase === 'exercise' ? 'bg-green-500' : 
+                  phase === 'prepare' ? 'bg-yellow-500' :
+                  phase === 'exercise' ? 'bg-green-500' :
                   phase === 'rest' ? 'bg-blue-500' : 'bg-purple-500'
                 }`}
-                style={{ 
+                style={{
                   width: `${(timeLeft / (
-                    phase === 'prepare' ? prepareTime : 
-                    phase === 'exercise' ? exerciseTime : 
+                    phase === 'prepare' ? prepareTime :
+                    phase === 'exercise' ? exerciseTime :
                     phase === 'rest' ? restTime : roundRestTime
-                  )) * 100}%` 
+                  )) * 100}%`
                 }}
               ></div>
             </div>
-            
+
             <div className="flex justify-between text-sm text-gray-500 mb-6">
               <div>Exercise {currentExercise + 1} of {exercises.length}</div>
               <div>
@@ -474,13 +465,24 @@ const HIITTimer = () => {
                 {phase === 'roundRest' && `Next round in ${timeLeft}s`}
               </div>
             </div>
-            
-            <button 
+
+            <button
               className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
               onClick={resetWorkout}
             >
               End Workout
             </button>
+
+            {/* Full-screen overlay during round rest */}
+            {phase === 'roundRest' && (
+              <div className="absolute inset-0 bg-purple-600 bg-opacity-50 flex flex-col items-center justify-center rounded-lg">
+                <div className="text-white text-center">
+                  <div className="text-2xl font-bold mb-2">Rest Between Rounds</div>
+                  <div className="text-8xl font-bold mb-2">{formatTime(timeLeft)}</div>
+                  <div className="text-lg">Get ready for Round {currentRound}</div>
+                </div>
+              </div>
+            )}
           </div>
         )}
         
